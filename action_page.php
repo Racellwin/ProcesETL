@@ -7,14 +7,16 @@
     $opinionSub = '/opinie-';
     $url = $baseUrl . $productId . $opinonsTab;
     $site = 2;
+    $product = Array();
+    $opinions = Array();
     $info = Array();
 
     $html = new simple_html_dom();
     $html->load_file($url);
 
-    $info['nazwa'] = $html->find(".product-name", 0)->innertext;
-    $info['cena'] = $html->find(".price", 0)->innertext;
-    $info['Ocena'] = $html->find(".product-score", 0)->innertext;
+    $product['nazwa'] = $html->find(".product-name", 0)->innertext;
+    $product['cena'] = $html->find(".price", 0)->innertext;
+    $product['Ocena'] = $html->find(".product-score", 0)->innertext;
     
     foreach ($html->find('ol li[class=product-review]') as $a) {
         $info['Opiniujacy'] = $a->find(".product-reviewer", 0)->innertext;
@@ -30,7 +32,7 @@
         $info['Data opinii'] = $a->find(".review-time", 0)->innertext;
         $info['Na TAK'] = $a->find(".vote-yes", 0)->innertext;
         $info['Na NIE'] = $a->find(".vote-no", 0)->innertext;
-        print_r($info);
+        array_push($opinions, $info);
         echo '###############';
     }
 
@@ -53,11 +55,12 @@
         $info['Data opinii'] = $a->find(".review-time", 0)->innertext;
         $info['Na TAK'] = $a->find(".vote-yes", 0)->innertext;
         $info['Na NIE'] = $a->find(".vote-no", 0)->innertext;
-        print_r($info);
         echo '###############';
     }
         $site++;
-    }while ($html->find('.arrow-next'))
+    }while ($html->find('.arrow-next'));
+        
+        print_r($opinions);
 
 
 //$info['Opiniujacy']    = $html->find(".product-reviewer",0)->innertext;
