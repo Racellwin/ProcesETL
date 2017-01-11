@@ -10,13 +10,14 @@
     $product = Array();
     $opinions = Array();
     $info = Array();
+    $prosArray = Array();
+    $consArray = Array();
 
     $html = new simple_html_dom();
     $html->load_file($url);
 
     $product['nazwa'] = $html->find(".product-name", 0)->innertext;
     $product['cena'] = $html->find(".price", 0)->innertext;
-  
     $product['Ocena'] = explode(' ', $html->find('span [itemprop=ratingValue]', 0)->plaintext )[0];
 
     do {
@@ -31,8 +32,18 @@
             } else {
                 $info['Rekomendacja'] = null;
             }
-            $info['Zalety'] = trim($a->find(".pros-cell", 0)->innertext);
-            $info['Wady'] = $a->find(".cons-cell", 0)->innertext;
+            $pros = $a->find(".pros-cell", 0);
+            foreach ($pros->find('ul li') as $p){
+                array_push($prosArray ,$p->innertext);  
+            }            
+            $info['Zalety'] = $prosArray;
+            
+            $cons = $a->find(".cons-cell", 0);
+            foreach ($cons->find('ul li') as $c){
+                array_push($consArray ,$c->innertext);    
+            }
+            $info['Wady'] = $consArray;
+            
             $info['Gwiazdki'] = $a->find(".review-score-count", 0)->innertext;
             $info['Data opinii'] = $a->find(".review-time", 0)->innertext;
             $info['Na TAK'] = $a->find(".vote-yes", 0)->innertext;
@@ -43,7 +54,7 @@
         $site++;
     } while ($html->find('.arrow-next'));
 
-    var_dump($product)
+    var_dump($opinions);
 
 
 //$info['Opiniujacy']    = $html->find(".product-reviewer",0)->innertext;
