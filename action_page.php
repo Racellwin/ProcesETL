@@ -1,4 +1,4 @@
-<pre><?php
+<?php
     require('simple_html_dom.php');
 
     $productId = $_GET['IDproduktu'];
@@ -16,7 +16,8 @@
 
     $product['nazwa'] = $html->find(".product-name", 0)->innertext;
     $product['cena'] = $html->find(".price", 0)->innertext;
-    $product['Ocena'] = $html->find(".product-score", 0)->innertext;
+  
+    $product['Ocena'] = explode(' ', $html->find('span [itemprop=ratingValue]', 0)->plaintext )[0];
 
     do {
         if ($site > 1) {
@@ -37,13 +38,12 @@
             $info['Na TAK'] = $a->find(".vote-yes", 0)->innertext;
             $info['Na NIE'] = $a->find(".vote-no", 0)->innertext;
             array_push($opinions, $info);
-            echo '###############';
         }
 
         $site++;
     } while ($html->find('.arrow-next'));
 
-    print_r($opinions);
+    var_dump($product)
 
 
 //$info['Opiniujacy']    = $html->find(".product-reviewer",0)->innertext;
