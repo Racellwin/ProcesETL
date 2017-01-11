@@ -6,7 +6,7 @@
     $opinonsTab = '/#tab=reviews';
     $opinionSub = '/opinie-';
     $url = $baseUrl . $productId . $opinonsTab;
-    $site = 2;
+    $site = 1;
     $product = Array();
     $opinions = Array();
     $info = Array();
@@ -17,50 +17,33 @@
     $product['nazwa'] = $html->find(".product-name", 0)->innertext;
     $product['cena'] = $html->find(".price", 0)->innertext;
     $product['Ocena'] = $html->find(".product-score", 0)->innertext;
-    
-    foreach ($html->find('ol li[class=product-review]') as $a) {
-        $info['Opiniujacy'] = $a->find(".product-reviewer", 0)->innertext;
-        if( $a->find(".product-recommended", 0) ){
-            $info['Rekomendacja'] = $a->find(".product-recommended", 0)->innertext;
-        }
-        else{
-           $info['Rekomendacja'] = null; 
-        }
-        $info['Zalety'] = trim($a->find(".pros-cell", 0)->innertext);
-        $info['Wady'] = $a->find(".cons-cell", 0)->innertext;
-        $info['Gwiazdki'] = $a->find(".review-score-count", 0)->innertext;
-        $info['Data opinii'] = $a->find(".review-time", 0)->innertext;
-        $info['Na TAK'] = $a->find(".vote-yes", 0)->innertext;
-        $info['Na NIE'] = $a->find(".vote-no", 0)->innertext;
-        array_push($opinions, $info);
-        echo '###############';
-    }
 
-     do{
-        $elementNr = 0;
-        $subPageUrl = $baseUrl . $productId . $opinionSub . $site;
-        
-        $html->load_file($subPageUrl);
+    do {
+        if ($site > 1) {
+            $subPageUrl = $baseUrl . $productId . $opinionSub . $site;
+            $html->load_file($subPageUrl);
+        }
         foreach ($html->find('ol li[class=product-review]') as $a) {
-        $info['Opiniujacy'] = $a->find(".product-reviewer", 0)->innertext;
-        if( $a->find(".product-recommended", 0) ){
-            $info['Rekomendacja'] = $a->find(".product-recommended", 0)->innertext;
+            $info['Opiniujacy'] = $a->find(".product-reviewer", 0)->innertext;
+            if ($a->find(".product-recommended", 0)) {
+                $info['Rekomendacja'] = $a->find(".product-recommended", 0)->innertext;
+            } else {
+                $info['Rekomendacja'] = null;
+            }
+            $info['Zalety'] = trim($a->find(".pros-cell", 0)->innertext);
+            $info['Wady'] = $a->find(".cons-cell", 0)->innertext;
+            $info['Gwiazdki'] = $a->find(".review-score-count", 0)->innertext;
+            $info['Data opinii'] = $a->find(".review-time", 0)->innertext;
+            $info['Na TAK'] = $a->find(".vote-yes", 0)->innertext;
+            $info['Na NIE'] = $a->find(".vote-no", 0)->innertext;
+            array_push($opinions, $info);
+            echo '###############';
         }
-        else{
-           $info['Rekomendacja'] = null; 
-        }
-        $info['Zalety'] = trim($a->find(".pros-cell", 0)->innertext);
-        $info['Wady'] = $a->find(".cons-cell", 0)->innertext;
-        $info['Gwiazdki'] = $a->find(".review-score-count", 0)->innertext;
-        $info['Data opinii'] = $a->find(".review-time", 0)->innertext;
-        $info['Na TAK'] = $a->find(".vote-yes", 0)->innertext;
-        $info['Na NIE'] = $a->find(".vote-no", 0)->innertext;
-        echo '###############';
-    }
+
         $site++;
-    }while ($html->find('.arrow-next'));
-        
-        print_r($opinions);
+    } while ($html->find('.arrow-next'));
+
+    print_r($opinions);
 
 
 //$info['Opiniujacy']    = $html->find(".product-reviewer",0)->innertext;
