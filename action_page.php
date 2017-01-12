@@ -16,10 +16,19 @@
     $html = new simple_html_dom();
     $html->load_file($url);
 
-    $product['nazwa'] = $html->find(".product-name", 0)->innertext;
-    $product['cena'] = $html->find(".price", 0)->innertext;
-    $product['Ocena'] = explode(' ', $html->find('span [itemprop=ratingValue]', 0)->plaintext )[0];
-
+//    $product['nazwa'] = $html->find(".product-name", 0)->innertext;
+//    $product['cena'] = $html->find(".price", 0)->innertext;
+//    $product['Ocena'] = explode(' ', $html->find('span [itemprop=ratingValue]', 0)->plaintext )[0];
+    $product_type = $html->find("dl[data-gacategoryname]", 0)->attr['data-gacategoryname'];
+    $product_brand = $html->find("dl[data-gacategoryname]", 0)->attr['data-brand'];
+    $product_infos = str_replace($productId.'/', "", $html->find("dl[data-gacategoryname]", 0)->attr['data-gaproductname']);
+    $product_model = $html->find("dl[data-gacategoryname]", 0)->attr['data-gaproductid'];
+    #var_dump($product);
+    
+    $mysqli = new mysqli("localhost", "root", "root", "etl") or die(mysql_error());
+    $products = mysqli_query($mysqli, "Insert Into etl.products (serial_number, type, producent, model, additional_info) VALUES ('$productId','$product_type','$product_brand','$product_model','$product_infos')");
+    $id = mysqli_insert_id($mysqli);
+    
     do {
         if ($site > 1) {
             $subPageUrl = $baseUrl . $productId . $opinionSub . $site;
@@ -44,18 +53,33 @@
             }
             $info['Wady'] = $consArray;
             
-            $info['Gwiazdki'] = $a->find(".review-score-count", 0)->innertext;
-            $info['Data opinii'] = $a->find(".review-time", 0)->innertext;
-            $info['Na TAK'] = $a->find(".vote-yes", 0)->innertext;
-            $info['Na NIE'] = $a->find(".vote-no", 0)->innertext;
+            $info['Gwiazdki'] = str_replace(',','.',str_replace('/5','',$a->find(".review-score-count", 0)->innertext));
+            $info['Data opinii'] = $a->find("span[time datetime]", 0)->attr['datetime'];
+            $info['Na TAK'] = intval($a->find(".vote-yes", 0)->plaintext);
+            $info['Na NIE'] = intval($a->find(".vote-no", 0)->plaintext);
+            $info['Opis'] = $a->find("p[class=product-review-body]", 0)->innertext;
             array_push($opinions, $info);
+            $consArray = Array();
+            $prosArray = Array();
         }
-
+        var_dump($opinions[4]);
         $site++;
     } while ($html->find('.arrow-next'));
 
-    var_dump($opinions);
-
+    foreach ($opinions as $opinion) {
+        $op = mysqli_query($mysqli, "Insert Into etl.opinions (product_id, text, stars, author, date, recomended, useful, useless) VALUES ('$id','".$opinion['Opis']."','".$opinion['Gwiazdki']."','".$opinion['Opiniujacy']."','".$opinion['Data opinii']."','".$opinion['Rekomendacja']."','".$opinion['Na TAK']."','".$opinion['Na NIE']."')");
+        $op_id = mysqli_insert_id($mysqli);
+        foreach ($opinion['Wady'] as $con){
+            $op_cons = mysqli_query($mysqli, "Insert Into etl.plus_minus (opinion_id, text, positive) VALUES ('$op_id', '$con', 0)");
+        }
+        foreach ($opinion['Zalety'] as $pro){
+            $op_pros = mysqli_query($mysqli, "Insert Into etl.plus_minus (opinion_id, text, positive) VALUES ('$op_id', '$pro', 1)");
+        }
+    }
+    
+    
+    
+   # var_dump($op);
 
 //$info['Opiniujacy']    = $html->find(".product-reviewer",0)->innertext;
 //$info['Rekomendacja']   = trim( $html->find(".product-recommended",0)->innertext );
