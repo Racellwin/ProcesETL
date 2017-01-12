@@ -12,9 +12,15 @@
   <input type="text" name="IDproduktu" value="">
   <br>
   <br>
-  <input type="submit" value="Submit">
+  <input type="submit" value="ETL" name="ETL">
+  <input type="submit" value="E" name="Extract"> 
+  <input type="submit" value="T" name="Transform"> 
+  <input type="submit" value="L" name="Load"> 
 </form> 
  
+    <form method="post" action="action_page.php">
+    <input type="submit" value="clearDB" name="clearDB"> 
+</form>
 
 
 

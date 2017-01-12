@@ -1,6 +1,18 @@
 <?php
-    require('simple_html_dom.php');
 
+require('simple_html_dom.php');
+$GLOBALS['mysqli'] = new mysqli("localhost", "root", "root", "etl") or die(mysql_error());
+
+if (isset($_POST['clearDB'])) {
+    clearDB($mysqli);
+    return 0;
+} else if (isset($_GET['ETL'])) {
+    etl();
+    return 0;
+}
+
+function etl() {
+    $mysqli = $GLOBALS['mysqli'];
     $productId = $_GET['IDproduktu'];
     $baseUrl = 'http://www.ceneo.pl/';
     $opinonsTab = '/#tab=reviews';
@@ -13,6 +25,14 @@
     $prosArray = Array();
     $consArray = Array();
 
+
+    $result = mysqli_query($mysqli, "SELECT * FROM products WHERE serial_number='$productId' LIMIT 1");
+    if (mysqli_num_rows($result) > 0) {
+        echo 'Product exixts';
+        return 0;
+    }
+
+
     $html = new simple_html_dom();
     $html->load_file($url);
 
@@ -21,14 +41,14 @@
 //    $product['Ocena'] = explode(' ', $html->find('span [itemprop=ratingValue]', 0)->plaintext )[0];
     $product_type = $html->find("dl[data-gacategoryname]", 0)->attr['data-gacategoryname'];
     $product_brand = $html->find("dl[data-gacategoryname]", 0)->attr['data-brand'];
-    $product_infos = str_replace($productId.'/', "", $html->find("dl[data-gacategoryname]", 0)->attr['data-gaproductname']);
+    $product_infos = str_replace($productId . '/', "", $html->find("dl[data-gacategoryname]", 0)->attr['data-gaproductname']);
     $product_model = $html->find("dl[data-gacategoryname]", 0)->attr['data-gaproductid'];
-    #var_dump($product);
-    
-    $mysqli = new mysqli("localhost", "root", "root", "etl") or die(mysql_error());
+#var_dump($product);
+
+
     $products = mysqli_query($mysqli, "Insert Into etl.products (serial_number, type, producent, model, additional_info) VALUES ('$productId','$product_type','$product_brand','$product_model','$product_infos')");
     $id = mysqli_insert_id($mysqli);
-    
+
     do {
         if ($site > 1) {
             $subPageUrl = $baseUrl . $productId . $opinionSub . $site;
@@ -42,18 +62,18 @@
                 $info['Rekomendacja'] = null;
             }
             $pros = $a->find(".pros-cell", 0);
-            foreach ($pros->find('ul li') as $p){
-                array_push($prosArray ,$p->innertext);  
-            }            
+            foreach ($pros->find('ul li') as $p) {
+                array_push($prosArray, $p->innertext);
+            }
             $info['Zalety'] = $prosArray;
-            
+
             $cons = $a->find(".cons-cell", 0);
-            foreach ($cons->find('ul li') as $c){
-                array_push($consArray ,$c->innertext);    
+            foreach ($cons->find('ul li') as $c) {
+                array_push($consArray, $c->innertext);
             }
             $info['Wady'] = $consArray;
-            
-            $info['Gwiazdki'] = str_replace(',','.',str_replace('/5','',$a->find(".review-score-count", 0)->innertext));
+
+            $info['Gwiazdki'] = str_replace(',', '.', str_replace('/5', '', $a->find(".review-score-count", 0)->innertext));
             $info['Data opinii'] = $a->find("span[time datetime]", 0)->attr['datetime'];
             $info['Na TAK'] = intval($a->find(".vote-yes", 0)->plaintext);
             $info['Na NIE'] = intval($a->find(".vote-no", 0)->plaintext);
@@ -67,20 +87,28 @@
     } while ($html->find('.arrow-next'));
 
     foreach ($opinions as $opinion) {
-        $op = mysqli_query($mysqli, "Insert Into etl.opinions (product_id, text, stars, author, date, recomended, useful, useless) VALUES ('$id','".$opinion['Opis']."','".$opinion['Gwiazdki']."','".$opinion['Opiniujacy']."','".$opinion['Data opinii']."','".$opinion['Rekomendacja']."','".$opinion['Na TAK']."','".$opinion['Na NIE']."')");
+        $op = mysqli_query($mysqli, "Insert Into etl.opinions (product_id, text, stars, author, date, recomended, useful, useless) VALUES ('$id','" . $opinion['Opis'] . "','" . $opinion['Gwiazdki'] . "','" . $opinion['Opiniujacy'] . "','" . $opinion['Data opinii'] . "','" . $opinion['Rekomendacja'] . "','" . $opinion['Na TAK'] . "','" . $opinion['Na NIE'] . "')");
         $op_id = mysqli_insert_id($mysqli);
-        foreach ($opinion['Wady'] as $con){
+        foreach ($opinion['Wady'] as $con) {
             $op_cons = mysqli_query($mysqli, "Insert Into etl.plus_minus (opinion_id, text, positive) VALUES ('$op_id', '$con', 0)");
         }
-        foreach ($opinion['Zalety'] as $pro){
+        foreach ($opinion['Zalety'] as $pro) {
             $op_pros = mysqli_query($mysqli, "Insert Into etl.plus_minus (opinion_id, text, positive) VALUES ('$op_id', '$pro', 1)");
         }
     }
-    
-    
-    
-   # var_dump($op);
+}
 
+function clearDB() {
+
+    $mysqli = $GLOBALS['mysqli'];
+    mysqli_query($mysqli, "TRUNCATE TABLE products");
+    mysqli_query($mysqli, "TRUNCATE TABLE opinions");
+    mysqli_query($mysqli, "TRUNCATE TABLE plus_minus");
+    echo "Baza wyczyszczona";
+    return 0;
+}
+
+# var_dump($op);
 //$info['Opiniujacy']    = $html->find(".product-reviewer",0)->innertext;
 //$info['Rekomendacja']   = trim( $html->find(".product-recommended",0)->innertext );
 //$info['Zalety']   = trim( $html->find(".pros-cell",0)->innertext );
@@ -91,11 +119,11 @@
 //$info['Na NIE']    = $html->find(".vote-no",0)->innertext;
 //print_r($info);
 
-    /*
-      $html2 = file_get_html("http://www.ceneo.pl/$adresik/#tab=reviews");
-      $info['Opinie'] = $html2->find(".product-review",0)->innertext;
-      $info['Opinie'] = $html2->find(".product-review",1)->innertext;
-     */
+/*
+  $html2 = file_get_html("http://www.ceneo.pl/$adresik/#tab=reviews");
+  $info['Opinie'] = $html2->find(".product-review",0)->innertext;
+  $info['Opinie'] = $html2->find(".product-review",1)->innertext;
+ */
 //$html2 = new simple_html_dom();
 // 
 //$html2->load_file("http://www.ceneo.pl/$adresik/#tab=reviews");
@@ -156,4 +184,4 @@
 //}
 //echo 'Ilosc opini:';echo $count-1;
 //echo 'Ilosc opini:';echo $count+$count3;
-    ?>
+?>
