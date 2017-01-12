@@ -1,12 +1,16 @@
 <?php
 
 require('simple_html_dom.php');
-$GLOBALS['mysqli'] = new mysqli("localhost", "root", "root", "etl") or die(mysql_error());
+$GLOBALS['mysqli'] = new mysqli("localhost", "root", "", "etl") or die(mysql_error());
 
 if (isset($_POST['clearDB'])) {
     clearDB($mysqli);
     return 0;
-} else if (isset($_GET['ETL'])) {
+}else if($_GET['IDproduktu'] == null){
+    echo "Zjebie podaj numer produkt";
+    return 0;
+}
+else if (isset($_GET['ETL'])) {
     etl();
     return 0;
 }
@@ -24,6 +28,10 @@ function etl() {
     $info = Array();
     $prosArray = Array();
     $consArray = Array();
+    $opCounter = 0;
+    $prosCounter = 0;
+    $consCounter = 0;
+   
 
 
     $result = mysqli_query($mysqli, "SELECT * FROM products WHERE serial_number='$productId' LIMIT 1");
@@ -82,20 +90,31 @@ function etl() {
             $consArray = Array();
             $prosArray = Array();
         }
-        var_dump($opinions[4]);
+        //var_dump($opinions[4]);
         $site++;
     } while ($html->find('.arrow-next'));
 
     foreach ($opinions as $opinion) {
         $op = mysqli_query($mysqli, "Insert Into etl.opinions (product_id, text, stars, author, date, recomended, useful, useless) VALUES ('$id','" . $opinion['Opis'] . "','" . $opinion['Gwiazdki'] . "','" . $opinion['Opiniujacy'] . "','" . $opinion['Data opinii'] . "','" . $opinion['Rekomendacja'] . "','" . $opinion['Na TAK'] . "','" . $opinion['Na NIE'] . "')");
+        if($op){
+            $opCounter++;
+        }
         $op_id = mysqli_insert_id($mysqli);
         foreach ($opinion['Wady'] as $con) {
             $op_cons = mysqli_query($mysqli, "Insert Into etl.plus_minus (opinion_id, text, positive) VALUES ('$op_id', '$con', 0)");
+            if($op_cons){
+                $consCounter++;
+            }
         }
         foreach ($opinion['Zalety'] as $pro) {
             $op_pros = mysqli_query($mysqli, "Insert Into etl.plus_minus (opinion_id, text, positive) VALUES ('$op_id', '$pro', 1)");
+            if($op_pros){
+                $prosCounter++;
+            }
         }
     }
+    
+    echo "Dodanych opini: " . $opCounter .", dodanych wad: " .$consCounter. ", dodanych zalet: " .$prosCounter;
 }
 
 function clearDB() {
